@@ -5,6 +5,11 @@ const config = require('./settings.json');
 const express = require('express');
 const http = require('http');
 
+if (Number(process.versions.node.split('.')[0]) < 22) {
+  console.error(`[FATAL] Minecraft 26.2 requires Node.js 22+. Current Node.js: ${process.version}`);
+  process.exit(1);
+}
+
 // ============================================================
 // EXPRESS SERVER - Keep Render/Aternos alive
 // ============================================================
@@ -895,7 +900,7 @@ process.on('SIGINT', () => {
 // START THE BOT
 // ============================================================
 console.log('='.repeat(50));
-console.log('  Minecraft AFK Bot v2.3 - Bug Fix Edition');
+console.log('  Minecraft AFK Bot v2.4 - Minecraft 26.2 Edition');
 console.log('='.repeat(50));
 console.log(`Server: ${config.server.ip}:${config.server.port}`);
 console.log(`Version: ${config.server.version}`);
