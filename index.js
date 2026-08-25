@@ -900,7 +900,7 @@ process.on('SIGINT', () => {
 // START THE BOT
 // ============================================================
 console.log('='.repeat(50));
-console.log('  Minecraft AFK Bot v2.4 - Minecraft 26.2 Edition');
+console.log('  Minecraft AFK Bot v2.5 - Minecraft 26.2 Edition');
 console.log('='.repeat(50));
 console.log(`Server: ${config.server.ip}:${config.server.port}`);
 console.log(`Version: ${config.server.version}`);
