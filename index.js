@@ -417,31 +417,9 @@ function createBot() {
       // Setup enhanced Leave/Rejoin logic
       setupLeaveRejoin(bot, createBot);
 
-      setTimeout(() => {
-        if (bot && botState.connected) {
-          bot.chat('/gamerule sendCommandFeedback false');
-        }
-      }, 3000);
-
-      // Attempt creative mode (only works if bot has OP)
-      setTimeout(() => {
-        if (bot && botState.connected) {
-          bot.chat('/gamemode creative');
-          console.log('[INFO] Attempted to set creative mode (requires OP)');
-        }
-      }, 3000);
-
-      bot.on('messagestr', (message) => {
-        if (
-          message.includes('commands.gamemode.success.self') ||
-          message.includes('Set own game mode to Creative Mode')
-        ) {
-          console.log('[INFO] Bot is now in Creative Mode.');
-           
-          bot.chat('/gamerule sendCommandFeedback false');
-          
-        }
-      });
+      // IMPORTANT: AFK-only mode. Never change gamemode, gamerules, or other server settings.
+      // Authentication is handled below only when the server actually asks for it.
+      setupAutoAuth(bot);
     });
 
     
@@ -514,18 +492,51 @@ function scheduleReconnect() {
 // ============================================================
 // MODULE INITIALIZATION
 // ============================================================
+function setupAutoAuth(bot) {
+  if (!config.utils['auto-auth']?.enabled) return;
+
+  const password = config.utils['auto-auth']?.password;
+  if (!password) return;
+
+  let attemptedRegister = false;
+  let attemptedLogin = false;
+  let lastAuthAttempt = 0;
+
+  const sendAuth = (type) => {
+    const now = Date.now();
+    if (now - lastAuthAttempt < 2500) return;
+    lastAuthAttempt = now;
+
+    if (type === 'register' && !attemptedRegister) {
+      attemptedRegister = true;
+      bot.chat(`/register ${password} ${password}`);
+      console.log('[Auth] Server requested registration; sent /register.');
+    } else if (type === 'login' && !attemptedLogin) {
+      attemptedLogin = true;
+      bot.chat(`/login ${password}`);
+      console.log('[Auth] Server requested login; sent /login.');
+    }
+  };
+
+  bot.on('messagestr', (message) => {
+    const text = String(message || '').toLowerCase();
+    if (/\b(register|registr|signup|sign up|enreg|inscri)/i.test(text)) {
+      sendAuth('register');
+      return;
+    }
+    if (/\b(login|log in|log-in|connexion|connect|password|mot de passe|passwort)/i.test(text)) {
+      sendAuth('login');
+    }
+  });
+}
+
 function initializeModules(bot, mcData, defaultMove) {
   console.log('[Modules] Initializing all modules...');
 
   // ---------- AUTO AUTH ----------
-  if (config.utils['auto-auth'].enabled) {
-    const password = config.utils['auto-auth'].password;
-    setTimeout(() => {
-      bot.chat(`/register ${password} ${password}`);
-      bot.chat(`/login ${password}`);
-      console.log('[Auth] Sent login commands');
-    }, 1000);
-  }
+  // Do not blindly send /register and /login. Only respond when the server
+  // actually prompts for authentication. This prevents unnecessary commands
+  // on servers that do not use AuthMe/login plugins.
 
   // ---------- CHAT MESSAGES ----------
   if (config.utils['chat-messages'].enabled) {
